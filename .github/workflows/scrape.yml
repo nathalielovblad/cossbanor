@@ -1,0 +1,31 @@
+name: Hämta öppettider
+
+on:
+  schedule:
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Hämta koden
+        uses: actions/checkout@v4
+
+      - name: Sätt upp Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Installera beroenden
+        run: pip install requests beautifulsoup4
+
+      - name: Kör scrape-skriptet
+        run: python scrape_mx.py
+
+      - name: Spara uppdaterad oppettider.json
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Auto: uppdatera öppettider [skip ci]"
+          file_pattern: oppettider.json
