@@ -123,7 +123,7 @@
     </div>
   </div>
   <div class="admin-panel" id="admin-panel">
-    <div class="admin-title">&#9881; Administrera manuella banor</div>
+    <div class="admin-title">&#9881; Administrera banor</div>
     <div class="admin-grid" id="admin-grid"></div>
     <div class="save-msg" id="save-msg"></div>
   </div>
@@ -196,7 +196,16 @@ function getWeekEvts(b, week) {
   const wdates = week.map(d => ds(d));
   const sc = (b.events||[]).filter(e => wdates.includes(e.date));
   const mn = (manualData[b.id]?.events||[]).filter(e => wdates.includes(e.d));
-  return [...sc, ...mn.map(e => ({ date: e.d, start: e.t, end: '', title: e.title||'', open: e.open, manual: true }))];
+  // Scraped title wins; manual description only fills in if scraped has none
+  const manualDescs = {};
+  mn.forEach(e => { if (e.title) manualDescs[e.d] = e.title; });
+  const merged = sc.map(e => ({ ...e, title: e.title || manualDescs[e.date] || '' }));
+  if (b.manual || b.gcal || b.rebuilding) {
+    const scDates = sc.map(e => e.date);
+    const manualOnly = mn.filter(e => !scDates.includes(e.d));
+    return [...merged, ...manualOnly.map(e => ({ date: e.d, start: e.t, end: '', title: e.title||'', open: e.open, manual: true }))];
+  }
+  return merged;
 }
 function render() {
   const now = new Date();
@@ -262,22 +271,24 @@ function toggleAdmin() {
   if (adminOpen) renderAdmin();
 }
 function renderAdmin() {
-  const manual = BANOR.filter(b => b.manual || b.rebuilding || b.gcal);
+  const manual = BANOR.filter(b => ['uringe','varmdo','nynashamn','arlanda','haninge','uvmk','botkyrka','taby'].includes(b.id));
   document.getElementById('admin-grid').innerHTML = manual.map(b => {
     const md = manualData[b.id] || { note:'', events:[] };
     const evList = md.events.length
-      ? md.events.map((ev,i) => `<div class="ev-item"><span>${ev.d} · ${ev.t}${ev.title?' · '+ev.title:''} · ${ev.open?'Öppet':'Stängt'}</span><button class="ev-del" onclick="delEv('${b.id}',${i})">×</button></div>`).join('')
-      : '<div style="font-size:11px;color:#aaa;padding:3px 0">Inga tillfällen inlagda</div>';
+      ? md.events.map((ev,i) => `<div class="ev-item"><span>${ev.d}${ev.title?' · '+ev.title:''}</span><button class="ev-del" onclick="delEv('${b.id}',${i})">×</button></div>`).join('')
+      : '<div style="font-size:11px;color:#aaa;padding:3px 0">Inga beskrivningar inlagda</div>';
+    const isAuto = !b.manual && !b.gcal && !b.rebuilding;
+    const formLabel = isAuto ? 'Lägg till beskrivning (visas om banan inte har egen text)' : 'Lägg till tillfälle';
     return `<div class="admin-card">
       <div class="admin-bname"><div class="bana-dot" style="background:${b.color}"></div>${b.name}</div>
       <div class="admin-label">Notis (visas på kortet)</div>
       <input class="admin-input" id="note-${b.id}" value="${md.note}" placeholder="t.ex. Stängt p.g.a. tävling">
       <button class="btn btn-save" onclick="saveNote('${b.id}')">Spara notis</button>
-      <div class="admin-label" style="margin-top:.6rem">Lägg till tillfälle</div>
+      <div class="admin-label" style="margin-top:.6rem">${formLabel}</div>
       <div class="admin-row"><label>Datum</label><input type="date" id="d-${b.id}"></div>
-      <div class="admin-row"><label>Tider</label><input type="text" id="t-${b.id}" placeholder="10:00–14:00"></div>
-      <div class="admin-row"><label>Typ</label><input type="text" id="tt-${b.id}" placeholder="t.ex. Allmän träning"></div>
-      <div class="admin-row"><label>Status</label><select id="s-${b.id}"><option value="open">Öppet</option><option value="closed">Stängt</option></select></div>
+      ${!isAuto ? `<div class="admin-row"><label>Tider</label><input type="text" id="t-${b.id}" placeholder="10:00–14:00"></div>` : `<input type="hidden" id="t-${b.id}" value="-">`}
+      <div class="admin-row"><label>Beskr.</label><input type="text" id="tt-${b.id}" placeholder="t.ex. Allmän träning"></div>
+      ${!isAuto ? `<div class="admin-row"><label>Status</label><select id="s-${b.id}"><option value="open">Öppet</option><option value="closed">Stängt</option></select></div>` : `<input type="hidden" id="s-${b.id}" value="open">`}
       <button class="btn btn-add" onclick="addEv('${b.id}')">+ Lägg till</button>
       <div class="ev-list">${evList}</div>
     </div>`;
@@ -289,14 +300,13 @@ function addEv(id) {
   const t = document.getElementById('t-'+id).value;
   const tt = document.getElementById('tt-'+id)?.value || '';
   const s = document.getElementById('s-'+id).value;
-  if (!d || !t) { alert('Fyll i datum och tider'); return; }
+  if (!d) { alert('Fyll i datum'); return; }
   if (!manualData[id]) manualData[id] = { note:'', events:[] };
   manualData[id].events.push({ d, t, title: tt, open: s==='open' });
   manualData[id].events.sort((a,b) => a.d.localeCompare(b.d));
   document.getElementById('d-'+id).value = '';
-  document.getElementById('t-'+id).value = '';
   if (document.getElementById('tt-'+id)) document.getElementById('tt-'+id).value = '';
-  showMsg('Tillfälle sparat'); render();
+  showMsg('Sparat'); render();
 }
 function delEv(id, i) { manualData[id].events.splice(i, 1); showMsg('Borttaget'); render(); }
 function showMsg(m) { const el = document.getElementById('save-msg'); el.textContent = '✓ ' + m; setTimeout(() => el.textContent = '', 4000); }
