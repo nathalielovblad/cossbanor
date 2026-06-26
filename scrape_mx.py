@@ -280,83 +280,6 @@ def scrape_haninge() -> list[dict]:
 # HUVUDPROGRAM
 # ──────────────────────────────────────────────
 
-def main():
-    print("=== Hämtar crossbanornas öppettider ===\n")
-
-    result = {
-        "updated": date.today().isoformat(),
-        "banor": [
-            {
-                "id":     "uringe",
-                "name":   "Uringe MX",
-                "url":    "https://uringe.se/kalender",
-                "events": scrape_uringe()
-            },
-            {
-                "id":     "nynashamn",
-                "name":   "Nynäshamn MCK",
-                "url":    "https://nynashamnsmck.se/kalender/",
-                "events": scrape_nynashamn()
-            },
-            {
-                "id":     "arlanda",
-                "name":   "Arlanda MC",
-                "url":    "https://www.arlandamc.se/traningstider/",
-                "events": scrape_arlanda()
-            },
-            {
-                "id":     "varmdo",
-                "name":   "Värmdö MK",
-                "url":    "https://varmdomx.se/kalender",
-                "events": scrape_varmdo()
-            },
-            {
-                "id":     "uvmk",
-                "name":   "Upplands Väsby MK",
-                "url":    "https://uvmk.nu/kalender/",
-                "note":   "Använder Google Kalender – uppdateras manuellt tills ICS-länk finns.",
-                "manual": True,
-                "events": scrape_uvmk()
-            },
-            {
-                "id":     "haninge",
-                "name":   "Haninge MK",
-                "url":    "https://anm.haningemotorklubb.se/anm/oppnBokn.php",
-                "note":   "Crossbanan stängd tills vidare – byggs om. Endurobanan öppen normala tider.",
-                "events": scrape_haninge()
-            },
-            {
-                "id":     "botkyrka",
-                "name":   "Botkyrka MK",
-                "url":    "https://www.botkyrkamk.se/kalender",
-                "note":   "Blockerar automatisk hämtning. Uppdateras manuellt.",
-                "manual": True,
-                "events": []  # ← fyll i manuellt
-            },
-            {
-                "id":     "taby",
-                "name":   "Täby MK",
-                "url":    "https://www.tabymk.se/",
-                "note":   "Blockerar automatisk hämtning. Uppdateras manuellt.",
-                "manual": True,
-                "events": []  # ← fyll i manuellt
-            },
-        ]
-    }
-
-    output = "oppettider.json"
-    with open(output, "w", encoding="utf-8") as f:
-        json.dump(result, f, ensure_ascii=False, indent=2)
-
-    total = sum(len(b["events"]) for b in result["banor"])
-    print(f"\n✓ {total} händelser sparade i {output}")
-    print("\nKör dagligen med cron:")
-    print("  0 6 * * * /usr/bin/python3 /path/to/scrape_mx.py")
-
-
-if __name__ == "__main__":
-    main()
-
 
 # ──────────────────────────────────────────────
 # VÄRMDÖ  (KlubbenOnline – samma system som Uringe)
@@ -440,7 +363,6 @@ def scrape_varmdo() -> list[dict]:
     print(f"  [Värmdö] {len(unique)} händelser")
     return unique
 
-
 # ──────────────────────────────────────────────
 # UPPLANDS VÄSBY  (Google Kalender – kan ej scrapa direkt)
 # Alternativ: hämta senaste nyheter för att plocka ut öppettider
@@ -464,3 +386,82 @@ def scrape_uvmk() -> list[dict]:
     """
     print("  [UVMK] Använder Google Kalender – hämtas ej automatiskt (uppdatera manuellt)")
     return []
+
+def main():
+    print("=== Hämtar crossbanornas öppettider ===\n")
+
+    result = {
+        "updated": date.today().isoformat(),
+        "banor": [
+            {
+                "id":     "uringe",
+                "name":   "Uringe MX",
+                "url":    "https://uringe.se/kalender",
+                "events": scrape_uringe()
+            },
+            {
+                "id":     "nynashamn",
+                "name":   "Nynäshamn MCK",
+                "url":    "https://nynashamnsmck.se/kalender/",
+                "events": scrape_nynashamn()
+            },
+            {
+                "id":     "arlanda",
+                "name":   "Arlanda MC",
+                "url":    "https://www.arlandamc.se/traningstider/",
+                "events": scrape_arlanda()
+            },
+            {
+                "id":     "varmdo",
+                "name":   "Värmdö MK",
+                "url":    "https://varmdomx.se/kalender",
+                "events": scrape_varmdo()
+            },
+            {
+                "id":     "uvmk",
+                "name":   "Upplands Väsby MK",
+                "url":    "https://uvmk.nu/kalender/",
+                "note":   "Använder Google Kalender – uppdateras manuellt tills ICS-länk finns.",
+                "manual": True,
+                "events": scrape_uvmk()
+            },
+            {
+                "id":     "haninge",
+                "name":   "Haninge MK",
+                "url":    "https://anm.haningemotorklubb.se/anm/oppnBokn.php",
+                "note":   "Crossbanan stängd tills vidare – byggs om. Endurobanan öppen normala tider.",
+                "events": scrape_haninge()
+            },
+            {
+                "id":     "botkyrka",
+                "name":   "Botkyrka MK",
+                "url":    "https://www.botkyrkamk.se/kalender",
+                "note":   "Blockerar automatisk hämtning. Uppdateras manuellt.",
+                "manual": True,
+                "events": []  # ← fyll i manuellt
+            },
+            {
+                "id":     "taby",
+                "name":   "Täby MK",
+                "url":    "https://www.tabymk.se/",
+                "note":   "Blockerar automatisk hämtning. Uppdateras manuellt.",
+                "manual": True,
+                "events": []  # ← fyll i manuellt
+            },
+        ]
+    }
+
+    output = "oppettider.json"
+    with open(output, "w", encoding="utf-8") as f:
+        json.dump(result, f, ensure_ascii=False, indent=2)
+
+    total = sum(len(b["events"]) for b in result["banor"])
+    print(f"\n✓ {total} händelser sparade i {output}")
+    print("\nKör dagligen med cron:")
+    print("  0 6 * * * /usr/bin/python3 /path/to/scrape_mx.py")
+
+
+if __name__ == "__main__":
+    main()
+
+
